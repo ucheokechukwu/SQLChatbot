@@ -1,46 +1,9 @@
-from langchain.sql_database import SQLDatabase
-from langchain.llms.openai import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import PromptTemplate
-from langchain_experimental.sql import SQLDatabaseChain
+from backend.chains.sql_chain import sql_chain_invoke
 import streamlit as st
+CHATBOT_URL = st.secrets["CHATBOT_URL"]
+POSTGRES_LOGIN = dict(st.secrets.POSTGRES_LOGIN)
+chat_model = st.secrets.SQLBOT_MODEL
 
-# default values
-postgres_log = dict(st.secrets.POSTGRES_LOGIN)
-chat_model = 'GPT3.5'
-# API_KEY = st.secrets["OPENAI_API_KEY"]
-
-
-
-def generate_llm(chat_model=chat_model):
-    """generates llm"""
-    model_name = 'gpt-4' if chat_model == 'GPT4' else 'gpt-3.5-turbo'
-    print(f"Chat GPT Model is {model_name}.")
-    from langchain.chat_models import ChatOpenAI
-    llm = ChatOpenAI(
-        # openai_api_key=API_KEY,
-        model_name=model_name,
-        temperature=0)
-    return llm
-
-
-def connect_db(postgres_log):
-    """connect to postgres SQL server using langchain and pyscopg"""
-    host, port, username, password, database = postgres_log.values()
-    
-    from langchain.sql_database import SQLDatabase
-    # post gres SQL setup
-    db = None
-    try:
-        db = SQLDatabase.from_uri(
-            f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}")
-        print("Connected to: ", host, port, username, password, database)
-        return db
-    except Exception as e:
-        st.error(f"An error {e} occured while connecting to the postgres SQL database")
-        raise
-    
-    
 
 # streamlit framework and state variables
 
@@ -51,11 +14,11 @@ if "visibility" not in st.session_state:
     st.session_state.visibility = "visible"
     st.session_state.disabled = False  
 # initialize db
-if 'postgres_log' not in st.session_state:
-    st.session_state.postgres_log = postgres_log   
+if 'POSTGRES_LOGIN' not in st.session_state:
+    st.session_state.POSTGRES_LOGIN = POSTGRES_LOGIN   
 # initialize chat_gpt
 if 'chat_model' not in st.session_state:
-    st.session_state.chat_model = chat_model
+    st.session_state.chat_model = CHATBOT_URL
 # initialize memory
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = ""   
@@ -77,8 +40,8 @@ with st.sidebar:
 
     with st.form("Postgres_Settings"):
         st.write("Postgres SQL Server settings")
-        postgres_input = postgres_log.copy()
-        for key in postgres_log.keys():
+        postgres_input = POSTGRES_LOGIN.copy()
+        for key in POSTGRES_LOGIN.keys():
             if key == 'password':
                 postgres_input[key] = st.text_input(
                 key, disabled=st.session_state.disabled, type="password")
@@ -88,41 +51,9 @@ with st.sidebar:
         submitted = st.form_submit_button(
             "Submit", disabled=st.session_state.disabled)
         if submitted:
-            st.session_state.postgres_log = postgres_input
+            st.session_state.POSTGRES_LOGIN = postgres_input
 #             st.session_state.sidebar_state = 'collapsed' if st.session_state.sidebar_state == 'expanded' else 'expanded'
 
-
-            
-            
-
-# Setup the database chain
-QUERY = """
-Given an input question: {question}
-
-use the previous chat history as the context to first create a syntactically correct postgresql query to run, 
-then look at the results of the query and return the answer.
-
-This is the chat history:
-{chat_history}
-
-Use the following format:
-
-Question: Question here
-SQLQuery: SQL Query to run
-SQLResult: Result of the SQLQuery
-Answer: Final answer here
-"""
-prompt = PromptTemplate(template=QUERY, 
-                        input_variables=['question','chat_history'])
-
-
-                        
-db = connect_db(st.session_state.postgres_log)
-llm = generate_llm(chat_model=st.session_state.chat_model)
-db_chain = SQLDatabaseChain.from_llm(
-    llm=llm,
-    db=db,
-    verbose=True)
 
 # chatbot
 
@@ -134,28 +65,50 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # React to user input
-if query := st.chat_input("Type in your SQL question here"):
+if question := st.chat_input("Type in your SQL question here"):
     # Display user message in chat message container
-    st.chat_message("user").markdown(query)
+    st.chat_message("user").markdown(question)
     # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": query})
-    
-    
-    
+    st.session_state.messages.append({"role": "user", "content": question})  
     
     try:
-        print(st.session_state.chat_history)
-        response = db_chain.run(prompt.format(
-                        question=query, 
-                        chat_history=st.session_state.chat_history))
-        st.session_state.chat_history += ('Human: '+query+'\nAI: '+response+'\n')
-    except:
-        response = f"""I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
+        print(st.session_state.chat_history) # for debugging 
+        ## original method
+        output_text = sql_chain_invoke(
+                        question=question,
+                        chat_history=st.session_state.chat_history)
+        #
+        ## new method
+        # data = {"question": question, "chat_history":st.session_state.chat_history}
+        # response = requests.post(CHATBOT_URL, json=data)
+        # assert response.status_code == 200
+        #
+        # output_text = response.json()["result"]
+               
+                        
+        st.session_state.chat_history += ('Human: '+question+'\nAI: '+output_text+'\n')
+    except Exception as e:
+        output_text = f"""{e}
+        I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
                                   
                     
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        st.markdown(response)
+        st.markdown(output_text)
     # Add assistant response to chat history
     st.session_state.messages.append(
-        {"role": "assistant", "content": response})
+        {"role": "assistant", "content": output_text})
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
