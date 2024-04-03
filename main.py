@@ -1,10 +1,23 @@
-import asyncio
+import os
+import time
+import requests
+import streamlit as st
+from backend import entrypoint
+
+
+
 
 from backend.chains.sql_chain import sql_chain_invoke
 import streamlit as st
 CHATBOT_URL = st.secrets["CHATBOT_URL"]
 POSTGRES_LOGIN = dict(st.secrets.POSTGRES_LOGIN)
 chat_model = st.secrets.SQLBOT_MODEL
+
+
+
+
+
+
 
 
 # streamlit framework and state variables
@@ -74,30 +87,16 @@ if question := st.chat_input("Type in your SQL question here"):
     st.session_state.messages.append({"role": "user", "content": question})  
     
     try:
-        print(st.session_state.chat_history) # for debugging 
-        ## original method
-        asyncio.set_event_loop(asyncio.new_event_loop()) 
-        loop = asyncio.get_event_loop()
-        
-        
-        output_text = loop.run_until_complete(
-        sql_chain_invoke(
-                        question=question,
-                        chat_history=st.session_state.chat_history)
-                        )
-        #
-        ## new method
-        # data = {"question": question, "chat_history":st.session_state.chat_history}
-        # response = requests.post(CHATBOT_URL, json=data)
-        # assert response.status_code == 200
-        #
-        # output_text = response.json()["result"]
-               
+        data = {"question": question, "chat_history":st.session_state.chat_history}
+        response = requests.post(CHATBOT_URL, json=data)
+        assert response.status_code == 200
+
+        output_text = response.json()
                         
         st.session_state.chat_history += ('Human: '+question+'\nAI: '+output_text+'\n')
     except Exception as e:
-        output_text = f"""{e}
-        I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
+        print(e)
+        output_text = f"""I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
                                   
                     
     # Display assistant response in chat message container
