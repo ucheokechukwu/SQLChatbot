@@ -65,7 +65,8 @@ llm = generate_llm(chat_model=chat_model)
 sql_chain = SQLDatabaseChain.from_llm(
     llm=llm,
     db=db,
-    verbose=True)
+    verbose=False,
+    return_intermediate_steps = False)
    
 async def sql_chain_invoke(question, chat_history=""):
 
