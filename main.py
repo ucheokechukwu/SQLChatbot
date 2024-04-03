@@ -1,3 +1,5 @@
+import asyncio
+
 from backend.chains.sql_chain import sql_chain_invoke
 import streamlit as st
 CHATBOT_URL = st.secrets["CHATBOT_URL"]
@@ -74,9 +76,15 @@ if question := st.chat_input("Type in your SQL question here"):
     try:
         print(st.session_state.chat_history) # for debugging 
         ## original method
-        output_text = sql_chain_invoke(
+        asyncio.set_event_loop(asyncio.new_event_loop()) 
+        loop = asyncio.get_event_loop()
+        
+        
+        output_text = loop.run_until_complete(
+        sql_chain_invoke(
                         question=question,
                         chat_history=st.session_state.chat_history)
+                        )
         #
         ## new method
         # data = {"question": question, "chat_history":st.session_state.chat_history}

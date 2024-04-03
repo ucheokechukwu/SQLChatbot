@@ -1,4 +1,5 @@
 import streamlit as st
+import asyncio
 from langchain.sql_database import SQLDatabase
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import PromptTemplate
@@ -66,22 +67,22 @@ sql_chain = SQLDatabaseChain.from_llm(
     db=db,
     verbose=True)
    
-def sql_chain_invoke(question, chat_history=""):
+async def sql_chain_invoke(question, chat_history=""):
 
     input = prompt.format(question=question, chat_history=chat_history)
     print(input)
     try:
-        response = sql_chain.invoke(input)['result']
+        response = (await sql_chain.ainvoke(input))['result']
     except Exception as e:
         response = f"""{e}
         I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
     print(response)
-    chat_history += ('Human: '+question+'\nAI: '+response+'\n\n\n')
-    # reduce chat_history
-    try:
-        chat_history = "\n\n\n".join(chat_history.split("\n\n\n")[-3:])
-    except:
-        pass
+    # chat_history += ('Human: '+question+'\nAI: '+response+'\n\n\n')
+    # # reduce chat_history
+    # try:
+    #     chat_history = "\n\n\n".join(chat_history.split("\n\n\n")[-3:])
+    # except:
+    #     pass
     return response
 
 
