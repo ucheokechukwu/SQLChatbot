@@ -13,7 +13,7 @@ async def invoke_agent_with_retry(query:QueryInput) -> str:
     print(query)
     """Retry the agent if the tool fails to run.
     Can happen during intermittent connection issues to external APIs."""
-    return await sql_chain_invoke(query.question, query.chat_history)
+    return await sql_chain_invoke(query)
 
 @app.get("/")
 async def get_status():
