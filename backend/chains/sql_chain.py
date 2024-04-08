@@ -9,21 +9,19 @@ from langchain_experimental.sql import SQLDatabaseChain
 
 # default values
 POSTGRES_LOGIN = dict(st.secrets.POSTGRES_LOGIN)
-chat_model = st.secrets.SQLBOT_MODEL
+CHAT_MODEL = st.secrets.SQLBOT_MODEL
 
 
-def generate_llm(chat_model=chat_model):
+def generate_llm(chat_model=CHAT_MODEL):
     """generates llm"""
-    model_name = 'gpt-4' if chat_model == 'GPT4' else 'gpt-3.5-turbo'
-    print(f"Chat GPT Model is {model_name}.")
     llm = ChatOpenAI(
-        model_name=model_name,
+        model_name=chat_model,
         temperature=0,
         verbose=False)
     return llm
 
 
-def connect_db(postgres_log):
+def connect_db(postgres_log=POSTGRES_LOGIN):
     """connect to postgres SQL server using langchain and pyscopg"""
     host, port, username, password, database = postgres_log.values()
     
@@ -61,17 +59,19 @@ Answer: Final answer here
 prompt = PromptTemplate(template=QUERY, 
                         input_variables=['question','chat_history'])
                         
-db = connect_db(POSTGRES_LOGIN)
-llm = generate_llm(chat_model=chat_model)
-sql_chain = SQLDatabaseChain.from_llm(
-    llm=llm,
-    db=db,
-    verbose=False,
-    return_intermediate_steps = False)
-   
-async def sql_chain_invoke(question, chat_history=""):
 
-    input = prompt.format(question=question, chat_history=chat_history)
+
+   
+async def sql_chain_invoke(query):
+    sql_chain = SQLDatabaseChain.from_llm(
+        # llm=generate_llm(query.chat_model) if query.chat_model else generate_llm(),
+        llm = generate_llm(),
+        # db=connect_db(query.postgres_log) if query.postgres_log else connect_db(),
+        db = connect_db(),
+        verbose=False,
+        return_intermediate_steps = False)
+    
+    input = prompt.format(question=query.question, chat_history=query.chat_history)
     print(input)
     try:
         response = (await sql_chain.ainvoke(input))['result']

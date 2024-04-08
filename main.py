@@ -15,11 +15,6 @@ chat_model = st.secrets.SQLBOT_MODEL
 
 
 
-
-
-
-
-
 # streamlit framework and state variables
 
 # Initialize chat history and sidebar visibility
@@ -50,7 +45,7 @@ st.title("SQL ChatBot")
 # sidebar to change chatgpt and server settings
 with st.sidebar:
     st.session_state.chat_model = st.selectbox('Select the Chat GPT Version',
-                            ("GPT3.5", "GPT4"))
+                            ("gpt-3.5-turbo", "gpt-4"))
     st.checkbox("Check to use default server connection", key="disabled")
 
     with st.form("Postgres_Settings"):
@@ -72,8 +67,6 @@ with st.sidebar:
 
 # chatbot
 
-
-
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -86,17 +79,18 @@ if question := st.chat_input("Type in your SQL question here"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": question})  
     
-    try:
-        data = {"question": question, "chat_history":st.session_state.chat_history}
-        response = requests.post(CHATBOT_URL, json=data)
-        assert response.status_code == 200
+    with st.spinner("The 🤖 is thinking..."):
+        try:
+            data = {"question": question, "chat_history":st.session_state.chat_history}
+            response = requests.post(CHATBOT_URL, json=data)
+            assert response.status_code == 200
 
-        output_text = response.json()
+            output_text = response.json()
                         
-        st.session_state.chat_history += ('Human: '+question+'\nAI: '+output_text+'\n')
-    except Exception as e:
-        print(e)
-        output_text = f"""I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
+            st.session_state.chat_history += ('Human: '+question+'\nAI: '+output_text+'\n')
+        except Exception as e:
+            print(e)
+            output_text = f"""I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
                                   
                     
     # Display assistant response in chat message container
