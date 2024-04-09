@@ -1,5 +1,7 @@
 # SQLChatbot
 
+* [Demo](https://sqlquerybot.streamlit.app/)
+
 ![Screenshot]()
 
 This chatbot interfaces with a [LangChain](https://python.langchain.com/docs/get_started/introduction) to query PostgreSQL databases. An update of the earlier version which integrates FastAPI in the backend.
