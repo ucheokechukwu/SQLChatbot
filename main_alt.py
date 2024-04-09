@@ -2,9 +2,8 @@ import os
 import time
 import requests
 import streamlit as st
-from backend import entrypoint
-
-
+import asyncio
+from backend.main_alt import sql_chain
 
 
 from backend.chains.sql_chain import sql_chain_invoke
@@ -62,7 +61,7 @@ with st.sidebar:
             "Submit", disabled=st.session_state.disabled)
         if submitted:
             st.session_state.POSTGRES_LOGIN = postgres_input
-#             st.session_state.sidebar_state = 'collapsed' if st.session_state.sidebar_state == 'expanded' else 'expanded'
+            st.session_state.sidebar_state = 'collapsed' if st.session_state.sidebar_state == 'expanded' else 'expanded'
 
 
 # chatbot
@@ -82,9 +81,10 @@ if question := st.chat_input("Type in your SQL question here"):
     with st.spinner("The 🤖 is thinking..."):
         try:
             data = {"question": question, "chat_history":st.session_state.chat_history}
-            response = requests.post(CHATBOT_URL, json=data)
-            assert response.status_code == 200
-            output_text = response.json() 
+            
+            ## new integration with simple async call
+            response = asyncio.run(sql_chain(data))
+            output_text = response                              
             st.session_state.chat_history += ('Human: '+question+'\nAI: '+output_text+'\n')
         except Exception as e:
             print(e)

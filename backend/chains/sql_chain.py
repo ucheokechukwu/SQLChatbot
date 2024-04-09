@@ -31,7 +31,6 @@ def connect_db(postgres_log=POSTGRES_LOGIN):
     try:
         db = SQLDatabase.from_uri(
             f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{database}")
-        print("Connected to: ", host, port, username, password, database)
         return db
     except Exception as e:
         st.error(f"An error {e} occured while connecting to the postgres SQL database")
@@ -72,19 +71,12 @@ async def sql_chain_invoke(query):
         return_intermediate_steps = False)
     
     input = prompt.format(question=query.question, chat_history=query.chat_history)
-    print(input)
+
     try:
         response = (await sql_chain.ainvoke(input))['result']
     except Exception as e:
         response = f"""{e}
         I cannot find a suitable answer from the SQLChat. Please rephrase and try again."""
-    print(response)
-    # chat_history += ('Human: '+question+'\nAI: '+response+'\n\n\n')
-    # # reduce chat_history
-    # try:
-    #     chat_history = "\n\n\n".join(chat_history.split("\n\n\n")[-3:])
-    # except:
-    #     pass
     return response
 
 

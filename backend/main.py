@@ -10,7 +10,6 @@ app = FastAPI(
 
 @async_retry(max_retries=10, delay=1)
 async def invoke_agent_with_retry(query:QueryInput) -> str:
-    print(query)
     """Retry the agent if the tool fails to run.
     Can happen during intermittent connection issues to external APIs."""
     return await sql_chain_invoke(query)

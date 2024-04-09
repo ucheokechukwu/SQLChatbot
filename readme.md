@@ -6,6 +6,8 @@
 
 This chatbot interfaces with a [LangChain](https://python.langchain.com/docs/get_started/introduction) to query PostgreSQL databases. An update of the earlier version which integrates FastAPI in the backend.
 
+Alternatively: The same app can be run from `main_alt.py` which does not integrate FastAPI into the backend, and calls the chain asynchronously.
+
 NOTE that the demo runs on a free Open API with limited calls. Alternatively, clone the github, and provide own `OPENAI_API_KEY`.
 
 ### Version History:
