@@ -3,7 +3,7 @@ import time
 import requests
 import streamlit as st
 import asyncio
-from backend.main_alt import sql_chain
+from backend.main_alt import sql_agent
 
 
 from backend.chains.sql_chain import sql_chain_invoke
@@ -83,7 +83,7 @@ if question := st.chat_input("Type in your SQL question here"):
             data = {"question": question, "chat_history":st.session_state.chat_history}
             
             ## new integration with simple async call
-            response = asyncio.run(sql_chain(data))
+            response = asyncio.run(sql_agent(data))
             output_text = response                              
             st.session_state.chat_history += ('Human: '+question+'\nAI: '+output_text+'\n')
         except Exception as e:
